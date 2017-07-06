@@ -1,0 +1,54 @@
+#include <HC-SR04.h>
+/*
+ Wiring to be as follows:
+    Photon  HC-SR04
+    GND     GND
+    VIN     VCC
+    D4      Trig
+    D5      Echo
+*/
+const int triggerPin = D4;
+const int echoPin = D5;
+int currentReading;
+int lastReading;
+int inputReading;
+int usbPower;
+int inputVoltage;
+PMIC pmic;
+HC_SR04 rangefinder = HC_SR04(triggerPin, echoPin);
+
+void setup()
+{
+    Serial.begin(9600);
+    rangefinder.init();
+}
+void loop()
+{
+    int currentReading = rangefinder.distInch();
+	byte systemStatus = pmic.getSystemStatus();
+		if ((systemStatus & 0x04) != 0) {	    
+		    usbPower = 1;}
+		    else{
+		    usbPower = 0;
+		    digitalWrite(D1, LOW);
+		    digitalWrite(D2, LOW);
+		};
+		
+    if (currentReading != lastReading) {
+      upload(currentReading);
+      lastReading = currentReading;
+    }
+    FuelGauge fuel;
+    Serial.print("Water Level: ");
+    Serial.print(currentReading);
+    Serial.print(", Battery Level: ");
+    Serial.print(fuel.getSoC() );
+    Serial.print(", USB Power: ");
+    Serial.print(usbPower);
+    Serial.println();
+    delay(15000);
+}
+void upload(int currentReading)
+{
+    Particle.publish("L1", String(currentReading), PRIVATE);
+}
